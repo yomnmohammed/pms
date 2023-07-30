@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Auth
+model AuthUser {
+  id           String        @id @unique
+  auth_session AuthSession[]
+  auth_key     AuthKey[]
+  role         Role          @default(STUDENT)
+  username     String        @unique
+  teacher      Teacher?
+  student      Student?
+
+  @@map("auth_user")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model AuthKey {
+  id              String   @id @unique
+  hashed_password String?
+  user_id         String
+  primary_key     Boolean
+  expires         BigInt?
+  auth_user       AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_key")
+}
+
+model AuthSession {
+  id             String   @id @unique
+  user_id        String
+  active_expires BigInt
+  idle_expires   BigInt
+  auth_user      AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_session")
+}
+
+model Teacher {
+  id      Int      @id @default(autoincrement())
+  name    String
+  special String
+  degree  String
+  user_id String   @unique
+  user    AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+  teams   Team[]
+
+  @@index([user_id])
+  @@map("teachers")
+}
+
+model Student {
+  id       Int      @id @default(autoincrement())
+  name     String
+  identity String
+  user_id  String   @unique
+  user     AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+  team_id  Int?
+  team     Team?    @relation(references: [id], fields: [team_id], onDelete: SetNull)
+
+  @@index([user_id, team_id])
+  @@map("students")
+}
+
+model Team {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  students Student[]
+  teachers Teacher[]
+  project  Project?
+
+  @@index([name])
+  @@map("teams")
+}
+
+enum ProposalStatus {
+  PROGRESS
+  REJECTED
+  ACCEPTED
+}
+
+model Proposal {
+  id      Int            @id @default(autoincrement())
+  title   String
+  text    Json
+  project Project[]
+  status  ProposalStatus @default(PROGRESS)
+
+  @@map("propsals")
+}
+
+enum ProjectStatus {
+  PENDING
+  CANCELED
+  PROGRESS
+  COMPLETED
+}
+
+model Project {
+  id         Int           @id @default(autoincrement())
+  name       String
+  team       Team          @relation(references: [id], fields: [team_id])
+  team_id    Int           @unique
+  propposal  Proposal      @relation(references: [id], fields: [propsal_id])
+  propsal_id Int
+  status     ProjectStatus @default(PROGRESS)
+  text       Json?
+
+  @@index([team_id, propsal_id])
+  @@map("projects")
+}
+
+model Setting {
+  name  String @unique
+  value String
+
+  @@index([name])
+  @@map("settings")
+}
