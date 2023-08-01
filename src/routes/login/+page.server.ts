@@ -6,7 +6,7 @@ import { auth } from '$lib/server/lucia';
 import type { Actions, PageServerLoad } from './$types.js';
 import { redirectIf } from '$lib/server/redirect.js';
 const schema = z.object({
-	username: z.string().min(5).max(22),
+	username: z.string().min(5),
 	password: z.string().min(8).max(72)
 });
 
